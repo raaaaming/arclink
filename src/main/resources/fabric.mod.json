@@ -1,0 +1,23 @@
+{
+	"schemaVersion": 1,
+	"id": "arclink",
+	"version": "${version}",
+	"name": "ARCLink",
+	"description": "Client-side counterpart to the ARCLink server plugin: connects to the plugin's own socket channel (bypassing vanilla plugin-message packets) to drive server-pushed client UI/features.",
+	"authors": [
+		"ARCLink"
+	],
+	"license": "MIT",
+	"environment": "client",
+	"entrypoints": {
+		"client": [
+			"com.arclink.client.ArcLinkClientMod"
+		]
+	},
+	"depends": {
+		"fabricloader": ">=0.19.5",
+		"minecraft": "~1.21.1",
+		"java": ">=21",
+		"fabric-api": "*"
+	}
+}
