@@ -19,6 +19,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 /**
  * Orchestrates the full ARCLink connection lifecycle (CLAUDE.md 3): connect,
@@ -61,6 +62,7 @@ public final class ArcLinkConnectionManager {
 	private final CommandRegistry registry;
 	private final Executor mainThreadExecutor;
 	private final Consumer<String> userFacingErrorSink;
+	private final Supplier<String> playerNameSupplier;
 	private final Gson gson = new Gson();
 	private final ReconnectPolicy backoff = new ReconnectPolicy();
 	private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor(r -> {
@@ -86,12 +88,13 @@ public final class ArcLinkConnectionManager {
 	private final AtomicInteger reconnectAttempt = new AtomicInteger();
 
 	public ArcLinkConnectionManager(Endpoint endpoint, CommandRegistry registry, Executor mainThreadExecutor,
-			Consumer<String> userFacingErrorSink) {
+			Consumer<String> userFacingErrorSink, Supplier<String> playerNameSupplier) {
 		this.endpoint = endpoint;
 		this.registry = registry;
 		this.mainThreadExecutor = mainThreadExecutor;
 		this.userFacingErrorSink = userFacingErrorSink == null ? s -> {
 		} : userFacingErrorSink;
+		this.playerNameSupplier = playerNameSupplier;
 	}
 
 	public State state() {
@@ -200,6 +203,7 @@ public final class ArcLinkConnectionManager {
 		JsonObject payload = new JsonObject();
 		payload.addProperty("signature", signature);
 		payload.addProperty("clientNonce", Base64.getEncoder().encodeToString(clientNonce));
+		payload.addProperty("playerName", playerNameSupplier.get());
 		sendRaw(ArcLinkMessage.create(TYPE_AUTH_RESPONSE, PROTOCOL_VERSION.toString(), payload));
 	}
 

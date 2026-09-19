@@ -37,7 +37,8 @@ public final class ArcLinkClientMod implements ClientModInitializer {
 					if (client.player != null) {
 						client.player.sendMessage(Text.literal("[ARCLink] " + message), false);
 					}
-				});
+				},
+				() -> client.getSession().getUsername());
 
 		ClientLifecycleEvents.CLIENT_STARTED.register(c -> connectionManager.start());
 		ClientLifecycleEvents.CLIENT_STOPPING.register(c -> connectionManager.stop());

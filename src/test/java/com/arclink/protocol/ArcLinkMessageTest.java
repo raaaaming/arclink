@@ -6,6 +6,7 @@ import com.google.gson.JsonParseException;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class ArcLinkMessageTest {
@@ -37,5 +38,13 @@ class ArcLinkMessageTest {
 	void rejectsGarbageJson() {
 		assertThrows(JsonParseException.class,
 				() -> ArcLinkMessage.fromJson(gson, "{not valid json"));
+	}
+
+	@Test
+	void missingPayloadNormalizesToEmptyObjectInsteadOfNull() {
+		ArcLinkMessage parsed = ArcLinkMessage.fromJson(gson, "{\"type\":\"ping\",\"version\":\"1.0.0\"}");
+
+		assertNotNull(parsed.payload);
+		assertEquals(0, parsed.payload.size());
 	}
 }

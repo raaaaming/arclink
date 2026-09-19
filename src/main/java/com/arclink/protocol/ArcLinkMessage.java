@@ -48,6 +48,12 @@ public final class ArcLinkMessage {
 		if (message == null || message.type == null || message.version == null) {
 			throw new JsonParseException("ARCLink message missing required 'type'/'version': " + json);
 		}
+		if (message.payload == null) {
+			// Gson deserializes via Unsafe allocation, bypassing this class's constructor (and its
+			// null->empty-object normalization) entirely, so a wire message that omits "payload"
+			// would otherwise leave this field null instead of an empty object.
+			message = new ArcLinkMessage(message.type, message.version, message.id, message.sessionToken, null);
+		}
 		return message;
 	}
 }
