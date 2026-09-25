@@ -116,3 +116,27 @@ HMAC 검증 → 버전 협상)의 코드를 두 저장소에서 라인 단위로
 
 **해결**: `host`에 서버 실제 주소를 채우고 클라이언트를 완전히 재시작(설정은
 `onInitializeClient()`에서 1회만 로드되며 핫리로드되지 않음). 코드 변경 불필요 — 설정값 문제였음.
+
+---
+
+## 최종 확정
+
+접속 재현 로그:
+
+```
+ARCLink auth rejected: no online player named 'Raaaaming'
+ARCLink session closed (player=null, code=4001, reason=no online player named 'Raaaaming')
+```
+
+이 메시지는 `ArcLinkSocketServer.handleAuthResponse`에서 `ArcAuthCodec.verify(...)`가
+**통과한 이후** `findPlayer(playerName)`이 null일 때 나는 거절 사유다 — 즉 HMAC 서명 검증은
+이미 성공했다는 뜻. 원인은: 클라이언트 모드가 `ClientLifecycleEvents.CLIENT_STARTED`(타이틀
+화면 진입 시점)에 곧바로 ARCLink 소켓에 접속을 시도하는데, 이 시점엔 아직 대상 마인크래프트
+서버에 입장하지 않아 Bukkit 쪽에서 해당 플레이어가 온라인으로 안 잡힌다. `ReconnectPolicy`의
+지수 백오프로 재시도하다가, 실제로 서버에 입장한 뒤의 재시도에서 `findPlayer`가 성공해
+최종적으로 인증이 완료된다(사용자가 직접 재현해 확인).
+
+**최종 결론**: 코드 버그 없음. 키 불일치도 아니었음. 원인은 클라이언트
+`config/arclink.json`의 `host`가 비어 있어 소켓 연결 자체를 시도하지 않았던 것뿐. `host`를
+채운 뒤에는 핸드셰이크 → HMAC 검증 → (서버 입장 전이라 일시적으로) player-lookup 거절 →
+재연결 백오프 → 서버 입장 후 재시도 성공, 순서로 설계대로 정상 동작함을 확인.

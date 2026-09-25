@@ -1,6 +1,6 @@
 # TODO — ARCLink HMAC/핸드셰이크 진단 후속
 
-- [MANUAL: 완료 — host가 비어 있어 연결 시도 자체가 스킵되고 있었음. 확인됨, DECISIONS.md 참고. host 채운 뒤 재접속 재확인 필요.]
+- [MANUAL: 해결 확인됨 — host 설정 후 정상 인증 성공 (DECISIONS.md "최종 확정" 참고). 남은 건 사용자가 서버 콘솔에서 `/arclink status`로 "1 client(s) authenticated" 확인하는 것뿐.]
   "사용자가 확인할 것"에 적힌 순서(`/arclink status` → 클라이언트 `ARCLink:` 로그 줄 판독)로
   정확히 어느 단계에서 끊기는지 특정할 것.]
 - [BLOCKED: 이 세션의 device_bash 셸은 아웃바운드 네트워크가 전면 차단되어(services.gradle.org,
