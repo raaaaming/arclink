@@ -95,3 +95,24 @@ HMAC 검증 → 버전 협상)의 코드를 두 저장소에서 라인 단위로
      (키 불일치의 반대 방향 증상)
 3. `host`/`port`가 서버가 실제로 바인드한 포트(마크 포트와 별개, 플러그인 설정 `config.port`,
    기본 25566)와 정확히 일치하는지, 클라이언트 `tls`가 `false`인지(서버가 TLS 미지원이므로) 확인.
+
+---
+
+## 추가 확인 결과 (사용자 재현 후 확정)
+
+실제 접속 재현 결과:
+
+- `/arclink status` → `listening on 25566 — 0 client(s) authenticated` (서버는 정상 기동)
+- 클라이언트 로그 → `ARCLink: 'host' not set in config/arclink.json — skipping connection.`
+- 양쪽 `presharedKeyHex` 값을 직접 대조 → `b32fd53d2f6715d98bc4a43d7446a4f69de8e139d9504da3ee754e100c5dd8e0`,
+  64자리, byte 단위로 완전히 동일. **키 불일치가 원인이 아님을 확정.**
+
+**확정된 실패 지점**: 소켓 연결 시도 자체가 발생하지 않음 (위 "원인 (A)"). 핸드셰이크/HMAC
+단계에는 도달하지도 못했다.
+
+**확정된 근본 원인**: 클라이언트 `config/arclink.json`의 `"host"` 필드가 빈 문자열로 남아있어
+`ArcLinkConfig.isConfigured()`가 거짓을 반환, `ArcLinkClientMod.onInitializeClient()`가
+`ArcLinkConnectionManager`를 아예 시작하지 않고 조용히 리턴함.
+
+**해결**: `host`에 서버 실제 주소를 채우고 클라이언트를 완전히 재시작(설정은
+`onInitializeClient()`에서 1회만 로드되며 핫리로드되지 않음). 코드 변경 불필요 — 설정값 문제였음.
