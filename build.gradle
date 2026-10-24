@@ -6,6 +6,11 @@ version = mod_version
 group = maven_group
 
 repositories {
+	// MCEF (Minecraft Chromium Embedded Framework) - CinemaMod fork; used for the
+	// ARCLink-server-pushed browser UI (open_browser signal -> ArcLinkBrowserScreen).
+	maven {
+		url = uri('https://mcef-download.cinemamod.com/repositories/releases')
+	}
 }
 
 loom {
@@ -24,6 +29,13 @@ dependencies {
 	mappings "net.fabricmc:yarn:${yarn_mappings}:v2"
 	modImplementation "net.fabricmc:fabric-loader:${loader_version}"
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${fabric_api_version}"
+
+	// modCompileOnly: only ArcLinkBrowserScreen/OpenBrowserCommand touch MCEF types, and
+	// they already no-op via MCEF.isInitialized() if the library mod isn't present/ready.
+	// modRuntimeOnly: MCEF ships as its own Fabric mod (downloads/owns the CEF runtime), so
+	// we depend on the artifact but never compile against a bundled copy.
+	modCompileOnly 'com.cinemamod:mcef:2.1.6-1.21.1'
+	modRuntimeOnly 'com.cinemamod:mcef-fabric:2.1.6-1.21.1'
 
 	testImplementation platform("org.junit:junit-bom:${junit_version}")
 	testImplementation 'org.junit.jupiter:junit-jupiter'

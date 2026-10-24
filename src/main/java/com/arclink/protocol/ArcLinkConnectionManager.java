@@ -81,6 +81,7 @@ public final class ArcLinkConnectionManager {
 	private volatile ArcLinkConnection connection;
 	private volatile State state = State.DISCONNECTED;
 	private volatile String sessionToken;
+	private volatile int httpPort;
 	private volatile byte[] pendingClientNonce;
 	private volatile long lastPongAtMillis;
 	private volatile boolean stopping;
@@ -99,6 +100,11 @@ public final class ArcLinkConnectionManager {
 
 	public State state() {
 		return state;
+	}
+
+	/** The file server's HTTP port advertised at handshake, or 0 if not yet known/unsupported. */
+	public int httpPort() {
+		return httpPort;
 	}
 
 	public void start() {
@@ -224,6 +230,10 @@ public final class ArcLinkConnectionManager {
 		}
 		pendingClientNonce = null;
 		sessionToken = requirePayloadField(message, "sessionToken");
+		// Optional: servers new enough to advertise the file server's HTTP port do so here
+		// (CLAUDE.md 5.4 — added as an optional field, older servers simply omit it and
+		// httpPort() stays 0, which callers must treat as "unavailable").
+		httpPort = message.payload.has("httpPort") ? message.payload.get("httpPort").getAsInt() : 0;
 
 		state = State.CONNECTED;
 		reconnectAttempt.set(0);
@@ -241,11 +251,22 @@ public final class ArcLinkConnectionManager {
 			return;
 		}
 		if (message.id != null && !seenMessageIds.add(message.id)) {
+			LOGGER.info("ARCLink: dropping duplicate '{}' (id={}) — already processed", message.type, message.id);
 			return; // duplicate delivery of an already-processed signal (4.3 idempotency)
 		}
+		LOGGER.info("ARCLink: received application message type='{}', dispatching to main thread", message.type);
 		mainThreadExecutor.execute(() -> {
-			if (!registry.dispatch(message)) {
-				LOGGER.debug("ARCLink: no handler registered for type '{}'", message.type);
+			try {
+				if (!registry.dispatch(message)) {
+					LOGGER.warn("ARCLink: no handler registered for type '{}'", message.type);
+				} else {
+					LOGGER.info("ARCLink: dispatch of '{}' completed without throwing", message.type);
+				}
+			} catch (Throwable t) {
+				// 진단용 안전망: 명령의 execute()가 예외를 던지면 mainThreadExecutor 내부에서
+				// 조용히 삼켜질 수 있어(클라이언트 로그에 아무것도 남지 않았던 것이 이것 때문일 수
+				// 있다) 명시적으로 잡아 로그로 남긴다.
+				LOGGER.error("ARCLink: handler for '{}' threw", message.type, t);
 			}
 		});
 	}
@@ -284,6 +305,7 @@ public final class ArcLinkConnectionManager {
 		stopHeartbeat();
 		sessionToken = null;
 		pendingClientNonce = null;
+		httpPort = 0;
 		ArcLinkConnection c = connection;
 		if (c != null) {
 			c.close();

@@ -18,6 +18,7 @@
 		"fabricloader": ">=0.19.5",
 		"minecraft": "~1.21.1",
 		"java": ">=21",
-		"fabric-api": "*"
+		"fabric-api": "*",
+		"mcef": ">=2.1.6-0"
 	}
 }
