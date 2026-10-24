@@ -40,6 +40,9 @@ public final class ArcLinkClientMod implements ClientModInitializer {
 				},
 				() -> client.getSession().getUsername());
 
+		registry.register("open_browser",
+				new OpenBrowserCommand(client, config.host, config.tls, connectionManager::httpPort));
+
 		ClientLifecycleEvents.CLIENT_STARTED.register(c -> connectionManager.start());
 		ClientLifecycleEvents.CLIENT_STOPPING.register(c -> connectionManager.stop());
 	}
